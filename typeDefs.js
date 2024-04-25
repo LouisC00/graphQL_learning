@@ -5,6 +5,10 @@ const typeDefs = `#graphql
     user(id: ID): User
   }
 
+  type Mutation{
+    signupUser(userNew:UserInput!): User
+  }
+
   type User {
     id: ID
     firstName: String
