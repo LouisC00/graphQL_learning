@@ -1,11 +1,19 @@
 import pc from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { ApolloError, AuthenticationError } from "apollo-server";
+import { AuthenticationError } from "apollo-server";
+import jwt from "jsonwebtoken";
 
 const prisma = new pc.PrismaClient();
 
 const resolvers = {
-  Query: {},
+  Query: {
+    users: async (_, args, { userId }) => {
+      console.log(userId);
+      const users = await prisma.user.findMany();
+      return users;
+    },
+  },
+
   Mutation: {
     signupUser: async (_, { userNew }) => {
       const user = await prisma.user.findUnique({
@@ -30,6 +38,22 @@ const resolvers = {
         lastName: newUser.lastName,
         email: newUser.email,
       };
+    },
+
+    signinUser: async (_, { userSignin }) => {
+      const user = await prisma.user.findUnique({
+        where: { email: userSignin.email },
+      });
+
+      const match =
+        user && (await bcrypt.compare(userSignin.password, user.password));
+
+      if (!match) {
+        throw new AuthenticationError("email or password id invalid");
+      }
+
+      const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
+      return { token };
     },
   },
 };
