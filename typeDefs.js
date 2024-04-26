@@ -2,12 +2,13 @@ const typeDefs = `#graphql
   type Query {
     greet: String,
     users: [User],
-    user(id: ID): User
+    messageByUser(receiverId: Int!):[Message]
   }
 
   type Mutation{
     signupUser(userNew:UserInput!): User
     signinUser(userSignin:UserSigninInput!): Token
+    createMessage(receiverId: Int!, text: String!): Message
   }
 
   type Token{
@@ -32,6 +33,16 @@ const typeDefs = `#graphql
   input UserSigninInput {
     email: String!
     password: String!
+  }
+
+  scalar Date
+
+  type Message{
+    id: ID!
+    text: String!
+    receiverId: Int!
+    senderId: Int!
+    createdAt: Date!
   }
 `;
 
