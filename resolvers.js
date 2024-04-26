@@ -22,6 +22,24 @@ const resolvers = {
       });
       return users;
     },
+
+    messageByUser: async (_, { receiverId }, { userId }) => {
+      if (!userId) throw new ForbiddenError("You must be logged in");
+
+      const message = await prisma.message.findMany({
+        where: {
+          OR: [
+            { senderId: userId, receiverId: receiverId },
+            { senderId: receiverId, receiverId: userId },
+          ],
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+      });
+
+      return message;
+    },
   },
 
   Mutation: {
@@ -64,6 +82,20 @@ const resolvers = {
 
       const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
       return { token };
+    },
+
+    createMessage: async (_, { receiverId, text }, { userId }) => {
+      if (!userId) throw new ForbiddenError("You must be logged in");
+
+      const message = await prisma.message.create({
+        data: {
+          text,
+          receiverId,
+          senderId: userId,
+        },
+      });
+
+      return message;
     },
   },
 };
