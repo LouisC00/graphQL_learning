@@ -1,7 +1,10 @@
 import { Stack, Avatar, Typography } from "@mui/material";
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const UserCard = ({ item: { firstName, lastName, id } }) => {
+  const navigate = useNavigate();
+
   return (
     <Stack
       className="usercard"
@@ -10,6 +13,7 @@ const UserCard = ({ item: { firstName, lastName, id } }) => {
       sx={{ py: 1 }}
       display="flex"
       alignItems="center"
+      onClick={() => navigate(`/${id}/${firstName} ${lastName}`)}
     >
       <Avatar
         src={`https://api.dicebear.com/8.x/initials/svg?seed=${firstName} ${lastName}`}
