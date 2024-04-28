@@ -1,11 +1,40 @@
 // rafce
 import React, { useRef, useState } from "react";
-import { Box, Stack, Typography, Button, TextField, Card } from "@mui/material";
+import {
+  Box,
+  Stack,
+  Typography,
+  Button,
+  TextField,
+  Card,
+  CircularProgress,
+  Alert,
+} from "@mui/material";
+import { useMutation } from "@apollo/client";
+import { SIGNUP_USER } from "../graphql/mutations";
 
 const AuthScreen = () => {
   const [showLogin, setShowLogin] = useState(true);
   const [formData, setFormData] = useState({});
   const authForm = useRef(null);
+  const [signupUser, { data: signupData, loading, error }] =
+    useMutation(SIGNUP_USER);
+
+  if (loading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="100vh"
+      >
+        <Box textAlign="center">
+          <CircularProgress />
+          <Typography variant="h6">Authenticating...</Typography>
+        </Box>
+      </Box>
+    );
+  }
 
   const handleChange = (e) => {
     setFormData({
@@ -16,7 +45,15 @@ const AuthScreen = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(formData);
+    if (showLogin) {
+      // singinuser
+    } else {
+      signupUser({
+        variables: {
+          userNew: formData,
+        },
+      });
+    }
   };
 
   return (
@@ -31,6 +68,12 @@ const AuthScreen = () => {
     >
       <Card sx={{ padding: "40px" }}>
         <Stack direction="column" spacing={2} sx={{ width: "400px" }}>
+          {signupData && (
+            <Alert severity="success">
+              {signupData.signupUser.firstName} Signed Up
+            </Alert>
+          )}
+          {error && <Alert severity="error">{error.message}</Alert>}
           <Typography variant="h5">
             {showLogin ? "Login" : "Sign Up"}
           </Typography>
@@ -66,7 +109,7 @@ const AuthScreen = () => {
             onChange={handleChange}
           />
           <Typography
-            variant="subtitle1"
+            variant="subtitlerror"
             onClick={() => {
               setShowLogin((showLogin) => !showLogin);
               setFormData(() => ({}));
