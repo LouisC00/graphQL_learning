@@ -2,7 +2,7 @@ const typeDefs = `#graphql
   type Query {
     greet: String,
     getAllUsers: [User],
-    messageByUser(receiverId: Int!):[Message]
+    messagesByUser(receiverId: Int!):[Message]
   }
 
   type Mutation{

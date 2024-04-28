@@ -23,7 +23,7 @@ const resolvers = {
       return users;
     },
 
-    messageByUser: async (_, { receiverId }, { userId }) => {
+    messagesByUser: async (_, { receiverId }, { userId }) => {
       if (!userId) throw new ForbiddenError("You must be logged in");
 
       const message = await prisma.message.findMany({
