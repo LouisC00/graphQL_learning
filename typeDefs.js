@@ -1,7 +1,7 @@
 const typeDefs = `#graphql
   type Query {
     greet: String,
-    users: [User],
+    getAllUsers: [User],
     messageByUser(receiverId: Int!):[Message]
   }
 
