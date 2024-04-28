@@ -11,16 +11,28 @@ import {
 } from "@mui/material";
 import MessageCard from "./MessageCard";
 import { GET_MSG } from "../graphql/queries";
+import { SEND_MSG } from "../graphql/mutations";
 import { useMutation, useQuery } from "@apollo/client";
 import SendIcon from "@mui/icons-material/Send";
 
 const ChatScreen = () => {
   const { id, name } = useParams();
   const [text, setText] = useState("");
+  const [messages, setMessages] = useState([]);
 
   const { data, loading, error } = useQuery(GET_MSG, {
     variables: {
       receiverId: +id,
+    },
+    onCompleted(data) {
+      setMessages(data.messagesByUser);
+    },
+  });
+
+  const [sendMessage] = useMutation(SEND_MSG, {
+    onCompleted(data) {
+      setMessages((prevMessages) => [...prevMessages, data.createMessage]);
+      setText(() => setText(""));
     },
   });
 
@@ -49,13 +61,13 @@ const ChatScreen = () => {
         {loading ? (
           <Typography variant="h6">loading chats</Typography>
         ) : (
-          data.messagesByUser.map((msg) => {
+          messages.map((msg) => {
             return (
               <MessageCard
                 key={msg.createdAt}
                 text={msg.text}
                 date={msg.createdAt}
-                direction={msg.receiverId == +id ? "end" : "start"}
+                direction={msg.receiverId === +id ? "end" : "start"}
               />
             );
           })
@@ -71,7 +83,17 @@ const ChatScreen = () => {
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
-        <SendIcon />
+        <SendIcon
+          fontSize="large"
+          onClick={() => {
+            sendMessage({
+              variables: {
+                receiverId: +id,
+                text,
+              },
+            });
+          }}
+        />
       </Stack>
     </Box>
   );
