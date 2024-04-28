@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   Box,
@@ -7,11 +7,25 @@ import {
   Avatar,
   Typography,
   TextField,
+  Stack,
 } from "@mui/material";
 import MessageCard from "./MessageCard";
+import { GET_MSG } from "../graphql/queries";
+import { useMutation, useQuery } from "@apollo/client";
+import SendIcon from "@mui/icons-material/Send";
 
 const ChatScreen = () => {
   const { id, name } = useParams();
+  const [text, setText] = useState("");
+
+  const { data, loading, error } = useQuery(GET_MSG, {
+    variables: {
+      receiverId: +id,
+    },
+  });
+
+  console.log(data);
+
   return (
     <Box flexGrow={1}>
       <AppBar position="static" sx={{ backgroundColor: "white", boxShadow: 0 }}>
@@ -32,17 +46,33 @@ const ChatScreen = () => {
         padding="10px"
         sx={{ overflowY: "auto" }}
       >
-        <MessageCard text="hi paxu" date="1234" direction="end" />
-        <MessageCard text="hi paxu" date="1234" />
-        <MessageCard text="hi paxu" date="1234" />
+        {loading ? (
+          <Typography variant="h6">loading chats</Typography>
+        ) : (
+          data.messagesByUser.map((msg) => {
+            return (
+              <MessageCard
+                key={msg.createdAt}
+                text={msg.text}
+                date={msg.createdAt}
+                direction={msg.receiverId == +id ? "end" : "start"}
+              />
+            );
+          })
+        )}
       </Box>
-      <TextField
-        placeholder="Enter a message"
-        variant="standard"
-        fullWidth
-        multiline
-        rows={2}
-      />
+      <Stack direction="row" sx={{ padding: "3px" }}>
+        <TextField
+          placeholder="Enter a message"
+          variant="standard"
+          fullWidth
+          multiline
+          rows={2}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <SendIcon />
+      </Stack>
     </Box>
   );
 };
