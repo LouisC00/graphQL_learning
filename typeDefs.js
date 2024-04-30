@@ -44,6 +44,10 @@ const typeDefs = `#graphql
     senderId: Int!
     createdAt: Date!
   }
+
+  type Subscription {
+    messageAdded: Message
+  }
 `;
 
 export default typeDefs;
