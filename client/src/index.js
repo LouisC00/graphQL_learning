@@ -8,15 +8,29 @@ import {
   ApolloClient,
   InMemoryCache,
   ApolloProvider,
-  createHttpLink,
+  HttpLink,
+  split,
 } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
+import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
+import { createClient } from "graphql-ws";
+import { getMainDefinition } from "@apollo/client/utilities";
 
-const httpLink = createHttpLink({
-  uri: "http://localhost:4000",
+// HTTP link for queries and mutations
+const httpLink = new HttpLink({
+  uri: "http://localhost:4000/graphql",
 });
 
+// WebSocket link for subscriptions
+const wsLink = new GraphQLWsLink(
+  createClient({
+    url: "ws://localhost:4000/subscriptions",
+  })
+);
+
+// Authentication middleware
 const authLink = setContext((_, { headers }) => {
+  // Return the headers to the context so httpLink can read them
   return {
     headers: {
       ...headers,
@@ -25,11 +39,26 @@ const authLink = setContext((_, { headers }) => {
   };
 });
 
+// Using split to send data to the correct handler, based on the operation type
+const splitLink = split(
+  ({ query }) => {
+    const definition = getMainDefinition(query);
+    return (
+      definition.kind === "OperationDefinition" &&
+      definition.operation === "subscription"
+    );
+  },
+  wsLink,
+  authLink.concat(httpLink)
+);
+
+// Apollo client setup
 const client = new ApolloClient({
-  link: authLink.concat(httpLink),
+  link: splitLink,
   cache: new InMemoryCache(),
 });
 
+// Rendering the React application
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
@@ -41,7 +70,5 @@ root.render(
   </React.StrictMode>
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+// Performance monitoring
 reportWebVitals();
