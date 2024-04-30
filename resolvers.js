@@ -106,7 +106,7 @@ const resolvers = {
 
   Subscription: {
     messageAdded: {
-      subscribe: (_, __, { pubsub }) => pubsub.asyncIterator(MESSAGE_ADDED),
+      subscribe: () => pubsub.asyncIterator(MESSAGE_ADDED),
     },
   },
 };
