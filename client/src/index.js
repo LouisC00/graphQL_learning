@@ -15,6 +15,7 @@ import { setContext } from "@apollo/client/link/context";
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { createClient } from "graphql-ws";
 import { getMainDefinition } from "@apollo/client/utilities";
+import { Toaster } from "react-hot-toast";
 
 // HTTP link for queries and mutations
 const httpLink = new HttpLink({
@@ -67,6 +68,7 @@ root.render(
   <React.StrictMode>
     <BrowserRouter>
       <ApolloProvider client={client}>
+        <Toaster position="top-center" />
         <App />
       </ApolloProvider>
     </BrowserRouter>

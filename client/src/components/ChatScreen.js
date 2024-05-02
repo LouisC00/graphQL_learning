@@ -15,33 +15,37 @@ import { SEND_MSG } from "../graphql/mutations";
 import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import SendIcon from "@mui/icons-material/Send";
 import { MSG_SUB } from "../graphql/subscriptions";
+import toast from "react-hot-toast";
 
 const ChatScreen = () => {
   const { id, name } = useParams();
   const [text, setText] = useState("");
   const [messages, setMessages] = useState([]);
 
-  const { data, loading, error } = useQuery(GET_MSG, {
-    variables: {
-      receiverId: +id,
-    },
+  const { loading } = useQuery(GET_MSG, {
+    variables: { receiverId: +id },
     onCompleted(data) {
       setMessages(data.messagesByUser);
+    },
+    onError(error) {
+      toast.error(`Error fetching messages: ${error.message}`);
     },
   });
 
   const [sendMessage] = useMutation(SEND_MSG, {
-    onCompleted(data) {
-      // setMessages((prevMessages) => [...prevMessages, data.createMessage]); // as the subscription already handle it
-      setText(() => setText(""));
+    onCompleted() {
+      setText("");
+    },
+    onError(error) {
+      toast.error(`Error sending message: ${error.message}`);
     },
   });
 
-  const {
-    data: subData,
-    loading: subscriptionLoading,
-    error: subscriptionError,
-  } = useSubscription(MSG_SUB);
+  const { data: subData } = useSubscription(MSG_SUB, {
+    onError(error) {
+      toast.error(`Error in subscription: ${error.message}`);
+    },
+  });
 
   useEffect(() => {
     if (subData) {
