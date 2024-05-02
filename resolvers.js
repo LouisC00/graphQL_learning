@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { AuthenticationError, ForbiddenError } from "apollo-server";
 import jwt from "jsonwebtoken";
 import { PubSub } from "graphql-subscriptions";
+import { withFilter } from "graphql-subscriptions";
 
 const pubsub = new PubSub();
 
@@ -106,7 +107,16 @@ const resolvers = {
 
   Subscription: {
     messageAdded: {
-      subscribe: () => pubsub.asyncIterator(MESSAGE_ADDED),
+      subscribe: withFilter(
+        () => pubsub.asyncIterator(MESSAGE_ADDED),
+        (payload, variables, context) => {
+          // Only forward a message if the context userId matches the senderId or receiverId of the message
+          return (
+            payload.messageAdded.senderId === context.userId ||
+            payload.messageAdded.receiverId === context.userId
+          );
+        }
+      ),
     },
   },
 };
