@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import {
   Box,
@@ -21,11 +21,14 @@ const ChatScreen = () => {
   const { id, name } = useParams();
   const [text, setText] = useState("");
   const [messages, setMessages] = useState([]);
+  const chatBoxRef = useRef(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
-  const { loading } = useQuery(GET_MSG, {
+  useQuery(GET_MSG, {
     variables: { receiverId: +id },
     onCompleted(data) {
       setMessages(data.messagesByUser);
+      setTimeout(scrollToBottom, 40); // Ensure DOM is updated
     },
     onError(error) {
       toast.error(`Error fetching messages: ${error.message}`);
@@ -33,8 +36,13 @@ const ChatScreen = () => {
   });
 
   const [sendMessage] = useMutation(SEND_MSG, {
+    variables: {
+      receiverId: +id,
+      text,
+    },
     onCompleted() {
       setText("");
+      setTimeout(scrollToBottom, 40); // Ensure DOM is updated
     },
     onError(error) {
       toast.error(`Error sending message: ${error.message}`);
@@ -50,8 +58,32 @@ const ChatScreen = () => {
   useEffect(() => {
     if (subData) {
       setMessages((prevMessages) => [...prevMessages, subData.messageAdded]);
+      setTimeout(() => {
+        if (isAtBottom) {
+          scrollToBottom();
+        }
+      }, 40); // Adjusted for more reliability
     }
   }, [subData]);
+
+  useEffect(() => {
+    const chatBox = chatBoxRef.current;
+    const handleScroll = () => {
+      if (!chatBox) return;
+      const atBottom =
+        chatBox.scrollHeight - chatBox.clientHeight <= chatBox.scrollTop + 5;
+      setIsAtBottom(atBottom);
+    };
+
+    chatBox.addEventListener("scroll", handleScroll);
+    return () => chatBox.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToBottom = () => {
+    if (chatBoxRef.current) {
+      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+    }
+  };
 
   return (
     <Box flexGrow={1}>
@@ -68,25 +100,20 @@ const ChatScreen = () => {
         </Toolbar>
       </AppBar>
       <Box
+        ref={chatBoxRef}
         backgroundColor="#f5f5f5"
         height="80vh"
         padding="10px"
         sx={{ overflowY: "auto" }}
       >
-        {loading ? (
-          <Typography variant="h6">loading chats</Typography>
-        ) : (
-          messages.map((msg) => {
-            return (
-              <MessageCard
-                key={msg.createdAt}
-                text={msg.text}
-                date={msg.createdAt}
-                direction={msg.receiverId === +id ? "end" : "start"}
-              />
-            );
-          })
-        )}
+        {messages.map((msg) => (
+          <MessageCard
+            key={msg.createdAt}
+            text={msg.text}
+            date={msg.createdAt}
+            direction={msg.receiverId === +id ? "end" : "start"}
+          />
+        ))}
       </Box>
       <Stack direction="row" sx={{ padding: "3px" }}>
         <TextField
@@ -98,9 +125,11 @@ const ChatScreen = () => {
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
+
         <SendIcon
           fontSize="large"
           onClick={() => {
+            if (text.trim() == "") return;
             sendMessage({
               variables: {
                 receiverId: +id,
