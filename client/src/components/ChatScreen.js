@@ -15,13 +15,11 @@ import { SEND_MSG } from "../graphql/mutations";
 import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import SendIcon from "@mui/icons-material/Send";
 import { MSG_SUB } from "../graphql/subscriptions";
-import { jwtDecode } from "jwt-decode";
 
 const ChatScreen = () => {
   const { id, name } = useParams();
   const [text, setText] = useState("");
   const [messages, setMessages] = useState([]);
-  const { userId } = jwtDecode(localStorage.getItem("jwt"));
 
   const { data, loading, error } = useQuery(GET_MSG, {
     variables: {
@@ -47,14 +45,7 @@ const ChatScreen = () => {
 
   useEffect(() => {
     if (subData) {
-      const { receiverId, senderId } = subData.messageAdded;
-      const isRelevantMessage =
-        (receiverId === +id && senderId === userId) ||
-        (receiverId === userId && senderId === +id);
-
-      if (isRelevantMessage) {
-        setMessages((prevMessages) => [...prevMessages, subData.messageAdded]);
-      }
+      setMessages((prevMessages) => [...prevMessages, subData.messageAdded]);
     }
   }, [subData]);
 
