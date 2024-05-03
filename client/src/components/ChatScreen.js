@@ -40,12 +40,16 @@ const ChatScreen = () => {
       receiverId: +id,
       text,
     },
-    onCompleted() {
+    onCompleted(data) {
+      // Message was successfully accepted by the server
       setText("");
+      // Optimistically add the message to the chat
+      setMessages((prevMessages) => [...prevMessages, data.createMessage]);
       setTimeout(scrollToBottom, 40); // Ensure DOM is updated
     },
     onError(error) {
       toast.error(`Error sending message: ${error.message}`);
+      // Optionally remove the message if not using a subscription to validate
     },
   });
 
@@ -133,7 +137,7 @@ const ChatScreen = () => {
         <SendIcon
           fontSize="large"
           onClick={() => {
-            if (text.trim() == "") return;
+            if (text.trim() === "") return;
             sendMessage({
               variables: {
                 receiverId: +id,
