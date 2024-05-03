@@ -112,7 +112,7 @@ const resolvers = {
         (payload, variables, context) => {
           // Only forward a message if the context userId matches the senderId or receiverId of the message
           return (
-            payload.messageAdded.senderId === context.userId ||
+            // payload.messageAdded.senderId === context.userId ||
             payload.messageAdded.receiverId === context.userId
           );
         }
