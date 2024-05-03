@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { useParams } from "react-router-dom";
 import {
   Box,
@@ -22,13 +22,12 @@ const ChatScreen = () => {
   const [text, setText] = useState("");
   const [messages, setMessages] = useState([]);
   const chatBoxRef = useRef(null);
-  const [isAtBottom, setIsAtBottom] = useState(true);
+  const atBottomRef = useRef(true);
 
   useQuery(GET_MSG, {
     variables: { receiverId: +id },
     onCompleted(data) {
       setMessages(data.messagesByUser);
-      setTimeout(scrollToBottom, 40); // Ensure DOM is updated
     },
     onError(error) {
       toast.error(`Error fetching messages: ${error.message}`);
@@ -41,46 +40,40 @@ const ChatScreen = () => {
       text,
     },
     onCompleted(data) {
-      // Message was successfully accepted by the server
       setText("");
-      // Optimistically add the message to the chat
       setMessages((prevMessages) => [...prevMessages, data.createMessage]);
-      setTimeout(scrollToBottom, 40); // Ensure DOM is updated
     },
     onError(error) {
       toast.error(`Error sending message: ${error.message}`);
-      // Optionally remove the message if not using a subscription to validate
     },
   });
 
-  const { data: subData } = useSubscription(MSG_SUB, {
+  useSubscription(MSG_SUB, {
+    variables: { receiverId: +id },
+    onSubscriptionData: ({ subscriptionData }) => {
+      if (subscriptionData.data) {
+        const newMessage = subscriptionData.data.messageAdded;
+        setMessages((prevMessages) => [...prevMessages, newMessage]);
+      }
+    },
     onError(error) {
       toast.error(`Error in subscription: ${error.message}`);
     },
   });
 
-  useEffect(() => {
-    if (
-      subData &&
-      (subData.messageAdded.receiverId === +id ||
-        subData.messageAdded.senderId === +id)
-    ) {
-      setMessages((prevMessages) => [...prevMessages, subData.messageAdded]);
-      setTimeout(() => {
-        if (isAtBottom) {
-          scrollToBottom();
-        }
-      }, 40);
+  useLayoutEffect(() => {
+    if (atBottomRef.current) {
+      scrollToBottom();
     }
-  }, [subData, id]); // Include `id` in dependencies to react to changes in the chat room
+  }, [messages]); // Scroll to bottom every time messages update
 
   useEffect(() => {
     const chatBox = chatBoxRef.current;
     const handleScroll = () => {
       if (!chatBox) return;
-      const atBottom =
-        chatBox.scrollHeight - chatBox.clientHeight <= chatBox.scrollTop + 5;
-      setIsAtBottom(atBottom);
+      const isAtBottom =
+        chatBox.scrollHeight - chatBox.clientHeight <= chatBox.scrollTop + 1;
+      atBottomRef.current = isAtBottom;
     };
 
     chatBox.addEventListener("scroll", handleScroll);
