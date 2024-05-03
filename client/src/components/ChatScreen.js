@@ -56,15 +56,19 @@ const ChatScreen = () => {
   });
 
   useEffect(() => {
-    if (subData) {
+    if (
+      subData &&
+      (subData.messageAdded.receiverId === +id ||
+        subData.messageAdded.senderId === +id)
+    ) {
       setMessages((prevMessages) => [...prevMessages, subData.messageAdded]);
       setTimeout(() => {
         if (isAtBottom) {
           scrollToBottom();
         }
-      }, 40); // Adjusted for more reliability
+      }, 40);
     }
-  }, [subData]);
+  }, [subData, id]); // Include `id` in dependencies to react to changes in the chat room
 
   useEffect(() => {
     const chatBox = chatBoxRef.current;
