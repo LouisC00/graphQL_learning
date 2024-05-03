@@ -16,6 +16,12 @@ import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import SendIcon from "@mui/icons-material/Send";
 import { MSG_SUB } from "../graphql/subscriptions";
 import toast from "react-hot-toast";
+import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev";
+
+if (process.env.NODE_ENV !== "production") {
+  loadDevMessages();
+  loadErrorMessages();
+}
 
 const ChatScreen = () => {
   const { id, name } = useParams();
@@ -49,15 +55,11 @@ const ChatScreen = () => {
   });
 
   useSubscription(MSG_SUB, {
-    variables: { receiverId: +id },
-    onSubscriptionData: ({ subscriptionData }) => {
-      if (subscriptionData.data) {
-        const newMessage = subscriptionData.data.messageAdded;
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
-      }
-    },
     onError(error) {
       toast.error(`Error in subscription: ${error.message}`);
+    },
+    onData: ({ data }) => {
+      setMessages((prevMessages) => [...prevMessages, data.data.messageAdded]);
     },
   });
 
