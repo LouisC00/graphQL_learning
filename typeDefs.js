@@ -2,7 +2,7 @@ const typeDefs = `#graphql
   type Query {
     greet: String,
     getAllUsers: [User],
-    messagesByUser(receiverId: Int!):[Message]
+    messagesByUser(receiverId: Int!, offset: Int = 0, limit: Int = 10): MessageConnection
   }
 
   type Mutation{
@@ -43,6 +43,20 @@ const typeDefs = `#graphql
     receiverId: Int!
     senderId: Int!
     createdAt: Date!
+  }
+
+  type MessageConnection {
+  edges: [MessageEdge]
+  pageInfo: PageInfo
+  }
+
+  type MessageEdge {
+    node: Message
+  }
+
+  type PageInfo {
+    endCursor: ID
+    hasNextPage: Boolean
   }
 
   type Subscription {

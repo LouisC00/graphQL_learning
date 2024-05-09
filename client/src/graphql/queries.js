@@ -12,13 +12,21 @@ export const GET_ALL_USERS = gql`
 `;
 
 export const GET_MSG = gql`
-  query messagesByUser($receiverId: Int!) {
-    messagesByUser(receiverId: $receiverId) {
-      id
-      text
-      receiverId
-      senderId
-      createdAt
+  query MessagesByUser($receiverId: Int!, $limit: Int, $offset: Int) {
+    messagesByUser(receiverId: $receiverId, limit: $limit, offset: $offset) {
+      edges {
+        node {
+          id
+          text
+          receiverId
+          senderId
+          createdAt
+        }
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
     }
   }
 `;

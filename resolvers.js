@@ -29,22 +29,47 @@ const resolvers = {
       return users;
     },
 
-    messagesByUser: async (_, { receiverId }, { userId }) => {
+    messagesByUser: async (
+      _,
+      { receiverId, offset = 0, limit = 15 },
+      { userId }
+    ) => {
       if (!userId) throw new ForbiddenError("You must be logged in");
 
-      const message = await prisma.message.findMany({
+      // Validate and ensure offset is never null or undefined
+      const skipCount = Number.isInteger(offset) && offset > 0 ? offset : 0;
+
+      const messages = await prisma.message.findMany({
         where: {
           OR: [
-            { senderId: userId, receiverId: receiverId },
+            { senderId: userId, receiverId },
             { senderId: receiverId, receiverId: userId },
           ],
         },
-        orderBy: {
-          createdAt: "asc",
+        orderBy: { createdAt: "desc" }, // Fetch newest messages first
+        skip: skipCount,
+        take: limit,
+      });
+
+      // Fetch the total number of messages to calculate pageInfo
+      const totalMessages = await prisma.message.count({
+        where: {
+          OR: [
+            { senderId: userId, receiverId },
+            { senderId: receiverId, receiverId: userId },
+          ],
         },
       });
 
-      return message;
+      const hasNextPage = skipCount + limit < totalMessages;
+
+      return {
+        edges: messages.reverse().map((message) => ({ node: message })), // Reverse to maintain correct order in client
+        pageInfo: {
+          total: totalMessages,
+          hasNextPage,
+        },
+      };
     },
   },
 
