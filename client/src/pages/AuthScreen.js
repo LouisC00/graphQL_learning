@@ -23,16 +23,16 @@ const AuthScreen = ({ setLoggedIn }) => {
     { data: signupData, loading: signupLoading, error: signupError },
   ] = useMutation(SIGNUP_USER);
 
-  const [
-    loginUser,
-    { data: loginData, loading: loginLoading, error: loginError },
-  ] = useMutation(LOGIN_USER, {
-    onCompleted(data) {
-      localStorage.setItem("jwt", data.signinUser.token);
-      setLoggedIn(true);
-    },
-    onError(error) {},
-  });
+  const [loginUser, { loading: loginLoading, error: loginError }] = useMutation(
+    LOGIN_USER,
+    {
+      onCompleted(data) {
+        localStorage.setItem("jwt", data.signinUser.token);
+        setLoggedIn(true);
+      },
+      onError(error) {},
+    }
+  );
 
   if (signupLoading || loginLoading) {
     return (
