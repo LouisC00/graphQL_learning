@@ -19,7 +19,13 @@ import {
 import MessageCard from "./MessageCard";
 import { GET_MSG } from "../graphql/queries";
 import { SEND_MSG } from "../graphql/mutations";
-import { useMutation, useQuery, useSubscription } from "@apollo/client";
+import {
+  useMutation,
+  useQuery,
+  useSubscription,
+  useApolloClient,
+  gql,
+} from "@apollo/client";
 import SendIcon from "@mui/icons-material/Send";
 import { MSG_SUB } from "../graphql/subscriptions";
 import toast from "react-hot-toast";
@@ -31,6 +37,7 @@ const ChatScreen = () => {
   const [hasMore, setHasMore] = useState(true);
   const chatBoxRef = useRef(null);
   const atBottomRef = useRef(true);
+  const client = useApolloClient(); // This hooks into the Apollo Client instance
 
   const { data, loading, fetchMore } = useQuery(GET_MSG, {
     variables: { receiverId: parseInt(id), limit: 15 },
@@ -59,12 +66,67 @@ const ChatScreen = () => {
     },
   });
 
+  // useSubscription(MSG_SUB, {
+  //   variables: { receiverId: parseInt(id) },
+  //   onData: ({ data }) => {
+  //     setMessages((prevMessages) => [...prevMessages, data.data.messageAdded]);
+  //   },
+  //   onError(error) {
+  //     toast.error(`Error in subscription: ${error.message}`);
+  //   },
+  // });
+
   useSubscription(MSG_SUB, {
     variables: { receiverId: parseInt(id) },
     onData: ({ data }) => {
-      setMessages((prevMessages) => [...prevMessages, data.data.messageAdded]);
+      console.log("Subscription data received:", data);
+      if (!data) return;
+
+      const newMessage = data.data.messageAdded;
+      if (!newMessage) {
+        console.error(
+          "Received subscription data does not contain 'messageAdded'."
+        );
+        return;
+      }
+
+      // Update local state to force UI update
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
+
+      client.cache.modify({
+        fields: {
+          messagesByUser(existingMessageRefs = {}, { readField }) {
+            const newMessageRef = client.cache.writeFragment({
+              data: newMessage,
+              fragment: gql`
+                fragment NewMessage on Message {
+                  id
+                  text
+                  receiverId
+                  senderId
+                  createdAt
+                }
+              `,
+            });
+
+            // Prevent duplicates by checking if the message is already in the cache
+            if (
+              existingMessageRefs.edges.some(
+                (ref) => readField("id", ref.node) === newMessage.id
+              )
+            ) {
+              return existingMessageRefs;
+            }
+
+            return {
+              ...existingMessageRefs,
+              edges: [{ node: newMessageRef }, ...existingMessageRefs.edges],
+            };
+          },
+        },
+      });
     },
-    onError(error) {
+    onError: (error) => {
       toast.error(`Error in subscription: ${error.message}`);
     },
   });
@@ -155,7 +217,7 @@ const ChatScreen = () => {
       >
         {messages.map((msg) => (
           <MessageCard
-            key={msg.createdAt}
+            key={msg.id}
             text={msg.text}
             date={msg.createdAt}
             direction={msg.receiverId === +id ? "end" : "start"}
@@ -164,32 +226,31 @@ const ChatScreen = () => {
         {hasMore && !loading && (
           <Button onClick={loadMoreMessages}>Load More</Button>
         )}
-
-        <Stack direction="row" sx={{ padding: "3px" }}>
-          <TextField
-            placeholder="Enter a message"
-            variant="standard"
-            fullWidth
-            multiline
-            rows={2}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
-
-          <SendIcon
-            fontSize="large"
-            onClick={() => {
-              if (text.trim() === "") return;
-              sendMessage({
-                variables: {
-                  receiverId: +id,
-                  text,
-                },
-              });
-            }}
-          />
-        </Stack>
       </Box>
+      <Stack direction="row" sx={{ padding: "3px" }}>
+        <TextField
+          placeholder="Enter a message"
+          variant="standard"
+          fullWidth
+          multiline
+          rows={2}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+
+        <SendIcon
+          fontSize="large"
+          onClick={() => {
+            if (text.trim() === "") return;
+            sendMessage({
+              variables: {
+                receiverId: +id,
+                text,
+              },
+            });
+          }}
+        />
+      </Stack>
     </Box>
   );
 };
