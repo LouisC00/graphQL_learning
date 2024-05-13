@@ -59,7 +59,40 @@ const ChatScreen = () => {
     },
     onCompleted(data) {
       setText("");
-      setMessages((prevMessages) => [...prevMessages, data.createMessage]);
+      const newMessage = data.createMessage;
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
+
+      client.cache.modify({
+        fields: {
+          messagesByUser(existingMessageRefs = {}, { readField }) {
+            const newMessageRef = client.cache.writeFragment({
+              data: newMessage,
+              fragment: gql`
+                fragment NewMessage on Message {
+                  id
+                  text
+                  receiverId
+                  senderId
+                  createdAt
+                }
+              `,
+            });
+
+            if (
+              existingMessageRefs.edges.some(
+                (ref) => readField("id", ref.node) === newMessage.id
+              )
+            ) {
+              return existingMessageRefs; // Prevent duplicates
+            }
+
+            return {
+              ...existingMessageRefs,
+              edges: [{ node: newMessageRef }, ...existingMessageRefs.edges],
+            };
+          },
+        },
+      });
     },
     onError(error) {
       toast.error(`Error sending message: ${error.message}`);
@@ -98,8 +131,8 @@ const ChatScreen = () => {
 
   useSubscription(MSG_SUB, {
     variables: { receiverId: parseInt(id) },
-    onData: ({ data }) => {
-      const newMessage = data.data.messageAdded;
+    onSubscriptionData: ({ subscriptionData }) => {
+      const newMessage = subscriptionData.data.messageAdded;
 
       setMessages((prevMessages) => [...prevMessages, newMessage]);
 
