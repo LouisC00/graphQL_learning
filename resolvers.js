@@ -31,42 +31,38 @@ const resolvers = {
 
     messagesByUser: async (
       _,
-      { receiverId, offset = 0, limit = 15 },
+      { receiverId, cursor, limit = 15 },
       { userId }
     ) => {
       if (!userId) throw new ForbiddenError("You must be logged in");
 
-      // Validate and ensure offset is never null or undefined
-      const skipCount = Number.isInteger(offset) && offset > 0 ? offset : 0;
+      const cursorDate = cursor
+        ? new Date(parseInt(cursor)).toISOString()
+        : undefined;
+
+      const whereClause = {
+        OR: [
+          { senderId: userId, receiverId },
+          { senderId: receiverId, receiverId: userId },
+        ],
+        createdAt: cursorDate ? { lt: cursorDate } : undefined,
+      };
 
       const messages = await prisma.message.findMany({
-        where: {
-          OR: [
-            { senderId: userId, receiverId },
-            { senderId: receiverId, receiverId: userId },
-          ],
-        },
-        orderBy: { createdAt: "desc" }, // Fetch newest messages first
-        skip: skipCount,
-        take: limit,
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        take: limit + 1, // Fetch one extra to check for the next page
       });
 
-      // Fetch the total number of messages to calculate pageInfo
-      const totalMessages = await prisma.message.count({
-        where: {
-          OR: [
-            { senderId: userId, receiverId },
-            { senderId: receiverId, receiverId: userId },
-          ],
-        },
-      });
-
-      const hasNextPage = skipCount + limit < totalMessages;
+      const hasNextPage = messages.length > limit;
+      const edges = hasNextPage ? messages.slice(0, -1) : messages;
 
       return {
-        edges: messages.reverse().map((message) => ({ node: message })), // Reverse to maintain correct order in client
+        edges: edges.map((message) => ({
+          node: message,
+        })),
         pageInfo: {
-          total: totalMessages,
+          endCursor: edges.length ? edges[edges.length - 1].createdAt : null,
           hasNextPage,
         },
       };

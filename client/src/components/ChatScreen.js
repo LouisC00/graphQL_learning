@@ -42,14 +42,14 @@ const ChatScreen = () => {
   const { data, loading, fetchMore } = useQuery(GET_MSG, {
     variables: { receiverId: parseInt(id), limit: 15 },
     onCompleted(data) {
-      setMessages(data.messagesByUser.edges.map((edge) => edge.node));
+      setMessages(data.messagesByUser.edges.map((edge) => edge.node).reverse());
       setHasMore(data.messagesByUser.pageInfo.hasNextPage);
     },
     onError(error) {
       toast.error(`Error fetching messages: ${error.message}`);
     },
     fetchPolicy: "cache-and-network",
-    notifyOnNetworkStatusChange: true, // Add this to make loading state update on fetchMore
+    notifyOnNetworkStatusChange: true,
   });
 
   const [sendMessage] = useMutation(SEND_MSG, {
@@ -66,31 +66,41 @@ const ChatScreen = () => {
     },
   });
 
-  // useSubscription(MSG_SUB, {
-  //   variables: { receiverId: parseInt(id) },
-  //   onData: ({ data }) => {
-  //     setMessages((prevMessages) => [...prevMessages, data.data.messageAdded]);
-  //   },
-  //   onError(error) {
-  //     toast.error(`Error in subscription: ${error.message}`);
-  //   },
-  // });
+  const loadMoreMessages = useCallback(() => {
+    if (!data || !data.messagesByUser.pageInfo.hasNextPage) return;
+
+    fetchMore({
+      variables: {
+        cursor: data.messagesByUser.pageInfo.endCursor,
+        limit: 10,
+      },
+      updateQuery: (prev, { fetchMoreResult }) => {
+        if (!fetchMoreResult) return prev;
+
+        // Reverse the new older messages before adding them
+        const newEdges = fetchMoreResult.messagesByUser.edges.map(
+          (edge) => edge.node
+        );
+
+        return {
+          messagesByUser: {
+            ...fetchMoreResult.messagesByUser,
+            edges: [
+              ...prev.messagesByUser.edges,
+              ...newEdges.map((message) => ({ node: message })), // Re-structure after reversing to match expected format
+            ],
+            pageInfo: fetchMoreResult.messagesByUser.pageInfo,
+          },
+        };
+      },
+    });
+  }, [data, fetchMore]);
 
   useSubscription(MSG_SUB, {
     variables: { receiverId: parseInt(id) },
     onData: ({ data }) => {
-      console.log("Subscription data received:", data);
-      if (!data) return;
-
       const newMessage = data.data.messageAdded;
-      if (!newMessage) {
-        console.error(
-          "Received subscription data does not contain 'messageAdded'."
-        );
-        return;
-      }
 
-      // Update local state to force UI update
       setMessages((prevMessages) => [...prevMessages, newMessage]);
 
       client.cache.modify({
@@ -109,18 +119,17 @@ const ChatScreen = () => {
               `,
             });
 
-            // Prevent duplicates by checking if the message is already in the cache
             if (
               existingMessageRefs.edges.some(
                 (ref) => readField("id", ref.node) === newMessage.id
               )
             ) {
-              return existingMessageRefs;
+              return existingMessageRefs; // Prevent duplicates
             }
 
             return {
               ...existingMessageRefs,
-              edges: [{ node: newMessageRef }, ...existingMessageRefs.edges],
+              edges: [...existingMessageRefs.edges, { node: newMessageRef }],
             };
           },
         },
@@ -136,32 +145,6 @@ const ChatScreen = () => {
       scrollToBottom();
     }
   }, [messages]); // Scroll to bottom every time messages update
-
-  const loadMoreMessages = useCallback(() => {
-    const currentOffset = messages.length;
-    if (!data || !data.messagesByUser.pageInfo.hasNextPage) return;
-
-    fetchMore({
-      variables: {
-        offset: currentOffset,
-        limit: 10, // You can adjust this limit as needed
-      },
-      updateQuery: (prev, { fetchMoreResult }) => {
-        if (!fetchMoreResult) return prev;
-
-        return {
-          messagesByUser: {
-            ...fetchMoreResult.messagesByUser,
-            edges: [
-              ...fetchMoreResult.messagesByUser.edges, // new messages
-              ...prev.messagesByUser.edges, // existing messages
-            ],
-            pageInfo: fetchMoreResult.messagesByUser.pageInfo,
-          },
-        };
-      },
-    });
-  }, [data, fetchMore, messages.length]);
 
   useEffect(() => {
     const chatBox = chatBoxRef.current;

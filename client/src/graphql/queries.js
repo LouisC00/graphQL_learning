@@ -12,8 +12,8 @@ export const GET_ALL_USERS = gql`
 `;
 
 export const GET_MSG = gql`
-  query MessagesByUser($receiverId: Int!, $limit: Int, $offset: Int) {
-    messagesByUser(receiverId: $receiverId, limit: $limit, offset: $offset) {
+  query MessagesByUser($receiverId: Int!, $limit: Int, $cursor: ID) {
+    messagesByUser(receiverId: $receiverId, limit: $limit, cursor: $cursor) {
       edges {
         node {
           id

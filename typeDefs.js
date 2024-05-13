@@ -2,7 +2,7 @@ const typeDefs = `#graphql
   type Query {
     greet: String,
     getAllUsers: [User],
-    messagesByUser(receiverId: Int!, offset: Int = 0, limit: Int = 10): MessageConnection
+    messagesByUser(receiverId: Int!, cursor: ID, limit: Int = 10): MessageConnection
   }
 
   type Mutation{
