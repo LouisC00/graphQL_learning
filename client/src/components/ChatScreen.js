@@ -29,6 +29,7 @@ import {
 import SendIcon from "@mui/icons-material/Send";
 import { MSG_SUB } from "../graphql/subscriptions";
 import toast from "react-hot-toast";
+import lodash from "lodash";
 
 const ChatScreen = () => {
   const { id, name } = useParams();
@@ -147,7 +148,7 @@ const ChatScreen = () => {
   const previousScrollHeight = useRef(0); // To track the scroll height before loading new messages
 
   const loadMoreMessages = useCallback(() => {
-    if (!data || !data.messagesByUser.pageInfo.hasNextPage) return;
+    if (!data || !data.messagesByUser.pageInfo.hasNextPage || loading) return;
 
     setLoadingMore(false);
     previousScrollHeight.current = chatBoxRef.current.scrollHeight; // Capture current scroll height before loading
@@ -177,7 +178,7 @@ const ChatScreen = () => {
     }).finally(() => {
       setLoadingMore(true);
     });
-  }, [data, fetchMore]);
+  }, [data, fetchMore, loading]);
 
   useLayoutEffect(() => {
     if (!loadingMore) return;
@@ -187,40 +188,35 @@ const ChatScreen = () => {
     setLoadingMore(false);
   }, [loadingMore]);
 
-  // useEffect(() => {
-  //   const handleScroll = () => {
-  //     console.log("Scroll Top: ", chatBoxRef.current.scrollTop);
-  //   };
-
-  //   const chatBox = chatBoxRef.current;
-  //   chatBox.addEventListener("scroll", handleScroll);
-
-  //   return () => {
-  //     chatBox.removeEventListener("scroll", handleScroll);
-  //   };
-  // }, []);
-
   useEffect(() => {
-    const chatBox = chatBoxRef.current;
+    // Assign the current value of chatBoxRef to a variable within the effect
+    const currentChatBox = chatBoxRef.current;
 
-    const handleScroll = () => {
-      if (!chatBox) return;
-      const currentScrollTop = chatBox.scrollTop;
+    const handleScroll = lodash.debounce(() => {
+      if (!currentChatBox) return; // Use the local variable instead of chatBoxRef.current directly
+      const { scrollTop, scrollHeight, clientHeight } = currentChatBox;
 
-      const isAtBottom =
-        chatBox.scrollHeight - chatBox.clientHeight <= currentScrollTop + 1;
+      const isAtBottom = scrollHeight - clientHeight <= scrollTop + 1;
       atBottomRef.current = isAtBottom;
 
-      const isAtTop = currentScrollTop === 0;
-
-      if (isAtTop && hasMore && !loading) {
+      const isAtTop = scrollTop === 0;
+      if (isAtTop && hasMore && !loadingMore & !loading) {
         loadMoreMessages();
       }
-    };
+    }, 10); // Changed debounce time to  10ms which is more common for handling scroll events
 
-    chatBox.addEventListener("scroll", handleScroll);
-    return () => chatBox.removeEventListener("scroll", handleScroll);
-  }, [hasMore, loading, loadMoreMessages]);
+    // Add the event listener using the local variable
+    if (currentChatBox) {
+      currentChatBox.addEventListener("scroll", handleScroll);
+    }
+
+    return () => {
+      // Remove the event listener using the same local variable
+      if (currentChatBox) {
+        currentChatBox.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, [hasMore, loadMoreMessages, loadingMore, loading]); // Keep dependencies array intact
 
   useLayoutEffect(() => {
     if (atBottomRef.current) {
