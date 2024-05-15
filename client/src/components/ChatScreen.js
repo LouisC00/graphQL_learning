@@ -203,7 +203,7 @@ const ChatScreen = () => {
       if (isAtTop && hasMore && !loadingMore & !loading) {
         loadMoreMessages();
       }
-    }, 10); // Changed debounce time to  10ms which is more common for handling scroll events
+    }, 20); // Changed debounce time to  10ms which is more common for handling scroll events
 
     // Add the event listener using the local variable
     if (currentChatBox) {
