@@ -42,7 +42,7 @@ const ChatScreen = () => {
   const { data, loading, fetchMore } = useQuery(GET_MSG, {
     variables: { receiverId: parseInt(id), limit: 15 },
     onCompleted(data) {
-      setMessages(data.messagesByUser.edges.map((edge) => edge.node).reverse());
+      setMessages(data.messagesByUser.edges.map((edge) => edge.node));
       setHasMore(data.messagesByUser.pageInfo.hasNextPage);
     },
     onError(error) {
@@ -99,40 +99,10 @@ const ChatScreen = () => {
     },
   });
 
-  const loadMoreMessages = useCallback(() => {
-    if (!data || !data.messagesByUser.pageInfo.hasNextPage) return;
-
-    fetchMore({
-      variables: {
-        cursor: data.messagesByUser.pageInfo.endCursor,
-        limit: 10,
-      },
-      updateQuery: (prev, { fetchMoreResult }) => {
-        if (!fetchMoreResult) return prev;
-
-        // Reverse the new older messages before adding them
-        const newEdges = fetchMoreResult.messagesByUser.edges.map(
-          (edge) => edge.node
-        );
-
-        return {
-          messagesByUser: {
-            ...fetchMoreResult.messagesByUser,
-            edges: [
-              ...prev.messagesByUser.edges,
-              ...newEdges.map((message) => ({ node: message })), // Re-structure after reversing to match expected format
-            ],
-            pageInfo: fetchMoreResult.messagesByUser.pageInfo,
-          },
-        };
-      },
-    });
-  }, [data, fetchMore]);
-
   useSubscription(MSG_SUB, {
     variables: { receiverId: parseInt(id) },
-    onSubscriptionData: ({ subscriptionData }) => {
-      const newMessage = subscriptionData.data.messageAdded;
+    onData: ({ data }) => {
+      const newMessage = data.data.messageAdded;
 
       setMessages((prevMessages) => [...prevMessages, newMessage]);
 
@@ -173,15 +143,65 @@ const ChatScreen = () => {
     },
   });
 
+  const [loadingMore, setLoadingMore] = useState(false);
+  const previousScrollHeight = useRef(0); // To track the scroll height before loading new messages
+
+  const loadMoreMessages = useCallback(() => {
+    if (!data || !data.messagesByUser.pageInfo.hasNextPage) return;
+
+    setLoadingMore(false);
+    previousScrollHeight.current = chatBoxRef.current.scrollHeight; // Capture current scroll height before loading
+
+    fetchMore({
+      variables: {
+        cursor: data.messagesByUser.pageInfo.endCursor,
+        limit: 10,
+      },
+      updateQuery: (prev, { fetchMoreResult }) => {
+        if (!fetchMoreResult) return prev;
+
+        const newEdges = fetchMoreResult.messagesByUser.edges.map(
+          (edge) => edge.node
+        );
+        return {
+          messagesByUser: {
+            ...fetchMoreResult.messagesByUser,
+            edges: [
+              ...newEdges.map((message) => ({ node: message })),
+              ...prev.messagesByUser.edges,
+            ],
+            pageInfo: fetchMoreResult.messagesByUser.pageInfo,
+          },
+        };
+      },
+    }).finally(() => {
+      setLoadingMore(true);
+    });
+  }, [data, fetchMore]);
+
   useLayoutEffect(() => {
-    if (atBottomRef.current) {
-      scrollToBottom();
-    }
-  }, [messages]); // Scroll to bottom every time messages update
+    if (!loadingMore) return;
+    const newScrollHeight = chatBoxRef.current.scrollHeight;
+    const heightDifference = newScrollHeight - previousScrollHeight.current;
+    chatBoxRef.current.scrollTop += heightDifference;
+    setLoadingMore(false);
+  }, [loadingMore]);
+
+  // useEffect(() => {
+  //   const handleScroll = () => {
+  //     console.log("Scroll Top: ", chatBoxRef.current.scrollTop);
+  //   };
+
+  //   const chatBox = chatBoxRef.current;
+  //   chatBox.addEventListener("scroll", handleScroll);
+
+  //   return () => {
+  //     chatBox.removeEventListener("scroll", handleScroll);
+  //   };
+  // }, []);
 
   useEffect(() => {
     const chatBox = chatBoxRef.current;
-    let lastScrollTop = chatBox.scrollTop;
 
     const handleScroll = () => {
       if (!chatBox) return;
@@ -196,13 +216,17 @@ const ChatScreen = () => {
       if (isAtTop && hasMore && !loading) {
         loadMoreMessages();
       }
-
-      lastScrollTop = currentScrollTop;
     };
 
     chatBox.addEventListener("scroll", handleScroll);
     return () => chatBox.removeEventListener("scroll", handleScroll);
   }, [hasMore, loading, loadMoreMessages]);
+
+  useLayoutEffect(() => {
+    if (atBottomRef.current) {
+      scrollToBottom();
+    }
+  }, [messages]); // Scroll to bottom every time messages update
 
   const scrollToBottom = () => {
     if (chatBoxRef.current) {
