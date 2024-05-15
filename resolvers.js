@@ -54,15 +54,18 @@ const resolvers = {
         take: limit + 1, // Fetch one extra to check for the next page
       });
 
+      // Check if there's a next page
       const hasNextPage = messages.length > limit;
+      // Slice if more messages were fetched than needed
       const edges = hasNextPage ? messages.slice(0, -1) : messages;
 
+      // Reverse the messages here before sending to client
       return {
-        edges: edges.map((message) => ({
+        edges: edges.reverse().map((message) => ({
           node: message,
         })),
         pageInfo: {
-          endCursor: edges.length ? edges[edges.length - 1].createdAt : null,
+          endCursor: edges.length ? edges[0].createdAt : null, // Adjusted to the new last item in the list
           hasNextPage,
         },
       };
