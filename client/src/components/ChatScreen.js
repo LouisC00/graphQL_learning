@@ -17,6 +17,7 @@ import {
   Button,
 } from "@mui/material";
 import MessageCard from "./MessageCard";
+import CustomAppBar from "./CustomAppBar";
 import { GET_MSG } from "../graphql/queries";
 import { SEND_MSG } from "../graphql/mutations";
 import {
@@ -32,7 +33,7 @@ import toast from "react-hot-toast";
 import lodash from "lodash";
 
 const ChatScreen = () => {
-  const { id, name } = useParams();
+  const { id, name, status } = useParams();
   const [text, setText] = useState("");
   const [messages, setMessages] = useState([]);
   const [hasMore, setHasMore] = useState(true);
@@ -232,7 +233,8 @@ const ChatScreen = () => {
 
   return (
     <Box flexGrow={1}>
-      <AppBar position="static" sx={{ backgroundColor: "white", boxShadow: 0 }}>
+      <CustomAppBar id={id} name={name} status={status} />
+      {/* <AppBar position="static" sx={{ backgroundColor: "white", boxShadow: 0 }}>
         <Toolbar>
           <Avatar
             src={`https://api.dicebear.com/8.x/initials/svg?seed=${name}`}
@@ -243,7 +245,7 @@ const ChatScreen = () => {
             {name}
           </Typography>
         </Toolbar>
-      </AppBar>
+      </AppBar> */}
       <Box
         ref={chatBoxRef}
         backgroundColor="#f5f5f5"
