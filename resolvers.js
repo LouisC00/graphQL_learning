@@ -70,6 +70,25 @@ const resolvers = {
         },
       };
     },
+
+    getCurrentUserStatus: async (_, args, { userId }) => {
+      if (!userId) {
+        throw new AuthenticationError(
+          "You must be logged in to see the status"
+        );
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, status: true },
+      });
+
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      return user;
+    },
   },
 
   Mutation: {
@@ -126,6 +145,17 @@ const resolvers = {
       });
       pubsub.publish(MESSAGE_ADDED, { messageAdded: message });
       return message;
+    },
+
+    updateUserStatus: async (_, { status }, { userId }) => {
+      if (!userId) throw new ForbiddenError("You must be logged in");
+
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { status },
+      });
+
+      return updatedUser;
     },
   },
 

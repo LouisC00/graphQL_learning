@@ -30,3 +30,12 @@ export const GET_MSG = gql`
     }
   }
 `;
+
+export const GET_CURRENT_USER_STATUS = gql`
+  query GetCurrentStatus {
+    getCurrentUserStatus {
+      id
+      status
+    }
+  }
+`;

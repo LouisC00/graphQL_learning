@@ -3,12 +3,14 @@ const typeDefs = `#graphql
     greet: String,
     getAllUsers: [User],
     messagesByUser(receiverId: Int!, cursor: ID, limit: Int = 10): MessageConnection
+    getCurrentUserStatus: UserStatus
   }
 
   type Mutation{
     signupUser(userNew:UserInput!): User
     signinUser(userSignin:UserSigninInput!): Token
     createMessage(receiverId: Int!, text: String!): Message
+    updateUserStatus(status: String!): User
   }
 
   type Token{
@@ -21,6 +23,7 @@ const typeDefs = `#graphql
     lastName: String
     email: String
     password: String
+    status: String
   }
 
   input UserInput {
@@ -33,6 +36,11 @@ const typeDefs = `#graphql
   input UserSigninInput {
     email: String!
     password: String!
+  }
+
+  type UserStatus {
+    id: ID!
+    status: String
   }
 
   scalar Date

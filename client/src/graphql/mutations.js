@@ -30,3 +30,15 @@ export const SEND_MSG = gql`
     }
   }
 `;
+
+export const UPDATE_USER_STATUS = gql`
+  mutation UpdateUserStatus($status: String!) {
+    updateUserStatus(status: $status) {
+      id
+      firstName
+      lastName
+      email
+      status
+    }
+  }
+`;

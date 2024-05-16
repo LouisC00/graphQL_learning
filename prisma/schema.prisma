@@ -19,6 +19,7 @@ model User {
   lastName  String
   password  String
   email     String    @unique
+  status    String?
   createdAt DateTime  @default(now())
   receiver  Message[] @relation(name: "receiver")
   sender    Message[] @relation(name: "sender")
