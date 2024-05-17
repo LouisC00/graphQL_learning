@@ -1,29 +1,35 @@
 const typeDefs = `#graphql
   type Query {
-    greet: String,
-    getAllUsers: [User],
+    greet: String
+    getAllUsers: [User]
     messagesByUser(receiverId: Int!, cursor: ID, limit: Int = 10): MessageConnection
     getCurrentUserStatus: UserStatus
+    getUserFriends: [User]
+    getUserAddedBy: User
   }
 
-  type Mutation{
-    signupUser(userNew:UserInput!): User
-    signinUser(userSignin:UserSigninInput!): Token
+  type Mutation {
+    signupUser(userNew: UserInput!): User
+    signinUser(userSignin: UserSigninInput!): Token
     createMessage(receiverId: Int!, text: String!): Message
     updateUserStatus(status: String!): User
+    addFriend(friendId: Int!): User
+    removeFriend(friendId: Int!): User
   }
 
-  type Token{
+  type Token {
     token: String!
   }
 
   type User {
-    id: ID
-    firstName: String
-    lastName: String
-    email: String
-    password: String
+    id: ID!
+    firstName: String!
+    lastName: String!
+    email: String!
+    password: String!
     status: String
+    friends: [User]
+    addedBy: User
   }
 
   input UserInput {
@@ -45,7 +51,7 @@ const typeDefs = `#graphql
 
   scalar Date
 
-  type Message{
+  type Message {
     id: ID!
     text: String!
     receiverId: Int!
@@ -54,8 +60,8 @@ const typeDefs = `#graphql
   }
 
   type MessageConnection {
-  edges: [MessageEdge]
-  pageInfo: PageInfo
+    edges: [MessageEdge]
+    pageInfo: PageInfo
   }
 
   type MessageEdge {

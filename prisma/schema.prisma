@@ -23,6 +23,15 @@ model User {
   createdAt DateTime  @default(now())
   receiver  Message[] @relation(name: "receiver")
   sender    Message[] @relation(name: "sender")
+
+  // Friend list self-referencing many-to-many relationship
+  friends  User[] @relation(name: "UserFriends")
+  friendOf User[] @relation(name: "UserFriends")
+
+  // AddedBy field
+  addedById  Int?
+  addedBy    User?  @relation("AddedBy", fields: [addedById], references: [id])
+  addedUsers User[] @relation("AddedBy")
 }
 
 model Message {

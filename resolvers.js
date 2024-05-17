@@ -1,15 +1,13 @@
-import pc from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { AuthenticationError, ForbiddenError } from "apollo-server";
 import jwt from "jsonwebtoken";
-import { PubSub } from "graphql-subscriptions";
-import { withFilter } from "graphql-subscriptions";
+import { PubSub, withFilter } from "graphql-subscriptions";
 
 const pubsub = new PubSub();
+const prisma = new PrismaClient();
 
 const MESSAGE_ADDED = "MESSAGE_ADDED";
-
-const prisma = new pc.PrismaClient();
 
 const resolvers = {
   Query: {
@@ -89,6 +87,28 @@ const resolvers = {
 
       return user;
     },
+
+    getUserFriends: async (_, args, { userId }) => {
+      if (!userId) throw new ForbiddenError("You must be logged in");
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { friends: true },
+      });
+
+      return user.friends;
+    },
+
+    getUserAddedBy: async (_, args, { userId }) => {
+      if (!userId) throw new ForbiddenError("You must be logged in");
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { addedBy: true },
+      });
+
+      return user.addedBy;
+    },
   },
 
   Mutation: {
@@ -126,7 +146,7 @@ const resolvers = {
         user && (await bcrypt.compare(userSignin.password, user.password));
 
       if (!match) {
-        throw new AuthenticationError("email or password id invalid");
+        throw new AuthenticationError("email or password is invalid");
       }
 
       const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
@@ -157,6 +177,36 @@ const resolvers = {
 
       return updatedUser;
     },
+
+    addFriend: async (_, { friendId }, { userId }) => {
+      if (!userId) throw new ForbiddenError("You must be logged in");
+
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          friends: {
+            connect: { id: friendId },
+          },
+        },
+      });
+
+      return user;
+    },
+
+    removeFriend: async (_, { friendId }, { userId }) => {
+      if (!userId) throw new ForbiddenError("You must be logged in");
+
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          friends: {
+            disconnect: { id: friendId },
+          },
+        },
+      });
+
+      return user;
+    },
   },
 
   Subscription: {
@@ -164,13 +214,32 @@ const resolvers = {
       subscribe: withFilter(
         () => pubsub.asyncIterator(MESSAGE_ADDED),
         (payload, variables, context) => {
-          // Only forward a message if the context userId matches the senderId or receiverId of the message
-          return (
-            // payload.messageAdded.senderId === context.userId ||
-            payload.messageAdded.receiverId === context.userId
-          );
+          return payload.messageAdded.receiverId === context.userId;
         }
       ),
+    },
+  },
+
+  User: {
+    friends: async (parent) => {
+      return await prisma.user.findMany({
+        where: {
+          id: {
+            in: parent.friends.map((friend) => friend.id),
+          },
+        },
+      });
+    },
+
+    addedBy: async (parent) => {
+      if (parent.addedById) {
+        return await prisma.user.findUnique({
+          where: {
+            id: parent.addedById,
+          },
+        });
+      }
+      return null;
     },
   },
 };
