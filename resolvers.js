@@ -27,6 +27,28 @@ const resolvers = {
       return users;
     },
 
+    getUserFriends: async (_, args, { userId }) => {
+      if (!userId) throw new ForbiddenError("You must be logged in");
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { friends: true },
+      });
+
+      return user.friends;
+    },
+
+    getUserAddedBy: async (_, args, { userId }) => {
+      if (!userId) throw new ForbiddenError("You must be logged in");
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { addedBy: true },
+      });
+
+      return user.addedBy;
+    },
+
     messagesByUser: async (
       _,
       { receiverId, cursor, limit = 15 },
@@ -86,28 +108,6 @@ const resolvers = {
       }
 
       return user;
-    },
-
-    getUserFriends: async (_, args, { userId }) => {
-      if (!userId) throw new ForbiddenError("You must be logged in");
-
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { friends: true },
-      });
-
-      return user.friends;
-    },
-
-    getUserAddedBy: async (_, args, { userId }) => {
-      if (!userId) throw new ForbiddenError("You must be logged in");
-
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { addedBy: true },
-      });
-
-      return user.addedBy;
     },
   },
 
