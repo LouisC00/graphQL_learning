@@ -21,7 +21,12 @@ const AuthScreen = ({ setLoggedIn }) => {
   const [
     signupUser,
     { data: signupData, loading: signupLoading, error: signupError },
-  ] = useMutation(SIGNUP_USER);
+  ] = useMutation(SIGNUP_USER, {
+    onCompleted() {
+      setShowLogin(true);
+    },
+    onError(error) {},
+  });
 
   const [loginUser, { loading: loginLoading, error: loginError }] = useMutation(
     LOGIN_USER,
