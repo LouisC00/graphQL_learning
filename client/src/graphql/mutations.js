@@ -42,14 +42,3 @@ export const UPDATE_USER_STATUS = gql`
     }
   }
 `;
-
-export const ADD_FRIEND = gql`
-  mutation AddFriend($friendId: Int!) {
-    addFriend(friendId: $friendId) {
-      id
-      firstName
-      lastName
-      email
-    }
-  }
-`;
