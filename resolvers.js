@@ -11,44 +11,6 @@ const MESSAGE_ADDED = "MESSAGE_ADDED";
 
 const resolvers = {
   Query: {
-    getAllUsers: async (_, args, { userId }) => {
-      if (!userId) throw new ForbiddenError("You must be logged in");
-
-      const users = await prisma.user.findMany({
-        orderBy: {
-          createdAt: "desc",
-        },
-        where: {
-          id: {
-            not: userId,
-          },
-        },
-      });
-      return users;
-    },
-
-    getUserFriends: async (_, args, { userId }) => {
-      if (!userId) throw new ForbiddenError("You must be logged in");
-
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { friends: true },
-      });
-
-      return user.friends;
-    },
-
-    getUserAddedBy: async (_, args, { userId }) => {
-      if (!userId) throw new ForbiddenError("You must be logged in");
-
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { addedBy: true },
-      });
-
-      return user.addedBy;
-    },
-
     messagesByUser: async (
       _,
       { receiverId, cursor, limit = 15 },
@@ -181,16 +143,22 @@ const resolvers = {
     addFriend: async (_, { friendId }, { userId }) => {
       if (!userId) throw new ForbiddenError("You must be logged in");
 
-      const user = await prisma.user.update({
-        where: { id: userId },
-        data: {
-          friends: {
-            connect: { id: friendId },
-          },
-        },
+      // Validate the friendId exists
+      const friend = await prisma.user.findUnique({
+        where: { id: friendId },
+        select: { id: true, firstName: true, lastName: true, status: true },
       });
 
-      return user;
+      if (!friend) {
+        throw new Error("User not found");
+      }
+
+      return {
+        id: friend.id,
+        firstName: friend.firstName,
+        lastName: friend.lastName,
+        status: friend.status,
+      };
     },
 
     removeFriend: async (_, { friendId }, { userId }) => {
@@ -217,29 +185,6 @@ const resolvers = {
           return payload.messageAdded.receiverId === context.userId;
         }
       ),
-    },
-  },
-
-  User: {
-    friends: async (parent) => {
-      return await prisma.user.findMany({
-        where: {
-          id: {
-            in: parent.friends.map((friend) => friend.id),
-          },
-        },
-      });
-    },
-
-    addedBy: async (parent) => {
-      if (parent.addedById) {
-        return await prisma.user.findUnique({
-          where: {
-            id: parent.addedById,
-          },
-        });
-      }
-      return null;
     },
   },
 };

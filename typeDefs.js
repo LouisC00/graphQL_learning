@@ -1,11 +1,7 @@
 const typeDefs = `#graphql
   type Query {
-    greet: String
-    getAllUsers: [User]
     messagesByUser(receiverId: Int!, cursor: ID, limit: Int = 10): MessageConnection
     getCurrentUserStatus: UserStatus
-    getUserFriends: [User]
-    getUserAddedBy: User
   }
 
   type Mutation {
@@ -13,8 +9,12 @@ const typeDefs = `#graphql
     signinUser(userSignin: UserSigninInput!): Token
     createMessage(receiverId: Int!, text: String!): Message
     updateUserStatus(status: String!): User
-    addFriend(friendId: Int!): User
+    addFriend(friendId: Int!): AddFriendResponse
     removeFriend(friendId: Int!): User
+  }
+
+  type Subscription {
+    messageAdded: Message
   }
 
   type Token {
@@ -28,8 +28,6 @@ const typeDefs = `#graphql
     email: String!
     password: String!
     status: String
-    friends: [User]
-    addedBy: User
   }
 
   input UserInput {
@@ -46,6 +44,13 @@ const typeDefs = `#graphql
 
   type UserStatus {
     id: ID!
+    status: String
+  }
+
+  type AddFriendResponse {
+    id: ID!
+    firstName: String!
+    lastName: String!
     status: String
   }
 
@@ -71,10 +76,6 @@ const typeDefs = `#graphql
   type PageInfo {
     endCursor: ID
     hasNextPage: Boolean
-  }
-
-  type Subscription {
-    messageAdded: Message
   }
 `;
 
