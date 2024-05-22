@@ -16,6 +16,8 @@ import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { createClient } from "graphql-ws";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { Toaster } from "react-hot-toast";
+import { Provider } from "react-redux";
+import store from "./app/store";
 
 // HTTP link for queries and mutations
 const httpLink = new HttpLink({
@@ -34,7 +36,6 @@ const wsLink = new GraphQLWsLink(
 
 // Authentication middleware
 const authLink = setContext((_, { headers }) => {
-  // Return the headers to the context so httpLink can read them
   return {
     headers: {
       ...headers,
@@ -66,12 +67,14 @@ const client = new ApolloClient({
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
-      <ApolloProvider client={client}>
-        <Toaster position="top-center" />
-        <App />
-      </ApolloProvider>
-    </BrowserRouter>
+    <Provider store={store}>
+      <BrowserRouter>
+        <ApolloProvider client={client}>
+          <Toaster position="top-center" />
+          <App />
+        </ApolloProvider>
+      </BrowserRouter>
+    </Provider>
   </React.StrictMode>
 );
 
