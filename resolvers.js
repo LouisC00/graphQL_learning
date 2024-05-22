@@ -11,6 +11,33 @@ const MESSAGE_ADDED = "MESSAGE_ADDED";
 
 const resolvers = {
   Query: {
+    getFriendsFromMessages: async (_, __, { userId }) => {
+      if (!userId) throw new ForbiddenError("You must be logged in");
+
+      const messages = await prisma.message.findMany({
+        where: {
+          OR: [{ senderId: userId }, { receiverId: userId }],
+        },
+        include: {
+          sender: true,
+          receiver: true,
+        },
+      });
+
+      const uniqueUsers = new Map();
+
+      messages.forEach(({ sender, receiver }) => {
+        if (sender.id !== userId) {
+          uniqueUsers.set(sender.id, sender);
+        }
+        if (receiver.id !== userId) {
+          uniqueUsers.set(receiver.id, receiver);
+        }
+      });
+
+      return Array.from(uniqueUsers.values());
+    },
+
     messagesByUser: async (
       _,
       { receiverId, cursor, limit = 15 },
@@ -34,6 +61,9 @@ const resolvers = {
         where: whereClause,
         orderBy: { createdAt: "desc" },
         take: limit + 1, // Fetch one extra to check for the next page
+        include: {
+          sender: true, // Include sender details
+        },
       });
 
       // Check if there's a next page

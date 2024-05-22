@@ -1,24 +1,11 @@
 import { gql } from "@apollo/client";
 
-export const GET_ALL_USERS = gql`
-  query GetAllUsers {
-    getAllUsers {
+export const GET_FRIENDS_FROM_MESSAGES = gql`
+  query GetFriendsFromMessages {
+    getFriendsFromMessages {
       id
       firstName
       lastName
-      email
-      status
-    }
-  }
-`;
-
-export const GET_USER_FRIENDS = gql`
-  query GetUserFriends {
-    getUserFriends {
-      id
-      firstName
-      lastName
-      email
       status
     }
   }
@@ -33,6 +20,12 @@ export const GET_MSG = gql`
           text
           receiverId
           senderId
+          sender {
+            id
+            firstName
+            lastName
+            status
+          }
           createdAt
         }
       }

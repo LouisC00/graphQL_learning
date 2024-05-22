@@ -1,5 +1,6 @@
 const typeDefs = `#graphql
   type Query {
+    getFriendsFromMessages: [User]
     messagesByUser(receiverId: Int!, cursor: ID, limit: Int = 10): MessageConnection
     getCurrentUserStatus: UserStatus
   }
@@ -61,6 +62,7 @@ const typeDefs = `#graphql
     text: String!
     receiverId: Int!
     senderId: Int!
+    sender: User!
     createdAt: Date!
   }
 
