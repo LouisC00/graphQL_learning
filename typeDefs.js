@@ -3,6 +3,7 @@ const typeDefs = `#graphql
     getFriendsFromMessages: [User]
     messagesByUser(receiverId: Int!, cursor: ID, limit: Int = 10): MessageConnection
     getCurrentUserStatus: UserStatus
+    addFriend(friendId: Int!): AddFriendResponse
   }
 
   type Mutation {
@@ -10,7 +11,6 @@ const typeDefs = `#graphql
     signinUser(userSignin: UserSigninInput!): Token
     createMessage(receiverId: Int!, text: String!): Message
     updateUserStatus(status: String!): User
-    addFriend(friendId: Int!): AddFriendResponse
     removeFriend(friendId: Int!): User
   }
 

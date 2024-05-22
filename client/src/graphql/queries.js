@@ -45,3 +45,14 @@ export const GET_CURRENT_USER_STATUS = gql`
     }
   }
 `;
+
+export const ADD_FRIEND = gql`
+  query AddFriend($friendId: Int!) {
+    addFriend(friendId: $friendId) {
+      id
+      firstName
+      lastName
+      status
+    }
+  }
+`;

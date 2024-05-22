@@ -101,6 +101,27 @@ const resolvers = {
 
       return user;
     },
+
+    addFriend: async (_, { friendId }, { userId }) => {
+      if (!userId) throw new ForbiddenError("You must be logged in");
+
+      // Validate the friendId exists
+      const friend = await prisma.user.findUnique({
+        where: { id: friendId },
+        select: { id: true, firstName: true, lastName: true, status: true },
+      });
+
+      if (!friend) {
+        throw new Error("User not found");
+      }
+
+      return {
+        id: friend.id,
+        firstName: friend.firstName,
+        lastName: friend.lastName,
+        status: friend.status,
+      };
+    },
   },
 
   Mutation: {
@@ -168,27 +189,6 @@ const resolvers = {
       });
 
       return updatedUser;
-    },
-
-    addFriend: async (_, { friendId }, { userId }) => {
-      if (!userId) throw new ForbiddenError("You must be logged in");
-
-      // Validate the friendId exists
-      const friend = await prisma.user.findUnique({
-        where: { id: friendId },
-        select: { id: true, firstName: true, lastName: true, status: true },
-      });
-
-      if (!friend) {
-        throw new Error("User not found");
-      }
-
-      return {
-        id: friend.id,
-        firstName: friend.firstName,
-        lastName: friend.lastName,
-        status: friend.status,
-      };
     },
 
     removeFriend: async (_, { friendId }, { userId }) => {
