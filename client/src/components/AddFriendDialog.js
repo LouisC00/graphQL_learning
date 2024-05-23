@@ -8,14 +8,17 @@ import {
   Button,
 } from "@mui/material";
 import { useLazyQuery } from "@apollo/client";
-import { ADD_FRIEND } from "../graphql/queries"; // Import the new query
+import { useDispatch } from "react-redux";
+import { ADD_FRIEND } from "../graphql/queries";
+import { addOrUpdateFriend } from "../app/slices/friendsSlice";
 
-const AddFriendDialog = ({ open, onClose, addFriendToList }) => {
+const AddFriendDialog = ({ open, onClose }) => {
   const [friendId, setFriendId] = useState("");
+  const dispatch = useDispatch();
   const [getFriend, { data, error }] = useLazyQuery(ADD_FRIEND, {
     onCompleted: (data) => {
-      if (data && data.userById) {
-        addFriendToList(data.userById);
+      if (data && data.addFriend) {
+        dispatch(addOrUpdateFriend(data.addFriend));
         setFriendId(""); // Clear the input after fetching
         onClose(); // Close the dialog
       }

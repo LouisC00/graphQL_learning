@@ -1,18 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Typography, Divider, Stack, IconButton } from "@mui/material";
 import UserCard from "./UserCard";
 import LogoutIcon from "@mui/icons-material/Logout";
 import SettingsIcon from "@mui/icons-material/Settings";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import { useQuery } from "@apollo/client";
-import { GET_FRIENDS_FROM_MESSAGES } from "../graphql/queries"; // Import the new query
+import { useQuery, useSubscription } from "@apollo/client";
+import { GET_FRIENDS_FROM_MESSAGES } from "../graphql/queries";
+// import { MSG_SUB } from "../graphql/subscriptions";
 import StatusDialog from "./StatusDialog";
-import AddFriendDialog from "./AddFriendDialog"; // Import the AddFriendDialog component
+import AddFriendDialog from "./AddFriendDialog";
+import { useDispatch, useSelector } from "react-redux";
+import { setFriends, addOrUpdateFriend } from "../app/slices/friendsSlice";
 
 const SideBar = ({ setLoggedIn }) => {
-  const { loading, data, error } = useQuery(GET_FRIENDS_FROM_MESSAGES);
+  const dispatch = useDispatch();
+  const friends = useSelector((state) => state.friends);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [addFriendDialogOpen, setAddFriendDialogOpen] = useState(false); // State for AddFriendDialog
+  const { loading, data, error } = useQuery(GET_FRIENDS_FROM_MESSAGES);
+  // const { data: subscriptionData } = useSubscription(MSG_SUB);
+
+  useEffect(() => {
+    if (data) {
+      dispatch(setFriends(data.getFriendsFromMessages));
+    }
+  }, [data, dispatch]);
+
+  // useEffect(() => {
+  //   if (subscriptionData) {
+  //     const { sender } = subscriptionData.messageAdded;
+  //     dispatch(addOrUpdateFriend(sender));
+  //   }
+  // }, [subscriptionData, dispatch]);
 
   if (loading) return <Typography variant="h6">Loading friends...</Typography>;
   if (error) {
@@ -42,8 +61,8 @@ const SideBar = ({ setLoggedIn }) => {
         </Stack>
       </Stack>
       <Divider />
-      {data?.getFriendsFromMessages.map((item) => (
-        <UserCard key={item.id} item={item} />
+      {friends.map((friend) => (
+        <UserCard key={friend.id} item={friend} />
       ))}
       <StatusDialog
         open={statusDialogOpen}
