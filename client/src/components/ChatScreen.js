@@ -41,8 +41,8 @@ const ChatScreen = () => {
     onError(error) {
       toast.error(`Error fetching messages: ${error.message}`);
     },
-    fetchPolicy: "cache-and-network",
-    notifyOnNetworkStatusChange: true,
+    fetchPolicy: "cache-first",
+    notifyOnNetworkStatusChange: false,
   });
 
   const [sendMessage] = useMutation(SEND_MSG, {
@@ -141,7 +141,7 @@ const ChatScreen = () => {
   const loadMoreMessages = useCallback(() => {
     if (!data || !data.messagesByUser.pageInfo.hasNextPage || loading) return;
 
-    setLoadingMore(true);
+    setLoadingMore(false);
     previousScrollHeight.current = chatBoxRef.current.scrollHeight;
 
     fetchMore({
@@ -155,6 +155,10 @@ const ChatScreen = () => {
         const newEdges = fetchMoreResult.messagesByUser.edges.map(
           (edge) => edge.node
         );
+
+        // Update the state with new messages
+        setMessages((prevMessages) => [...newEdges, ...prevMessages]);
+
         return {
           messagesByUser: {
             ...fetchMoreResult.messagesByUser,
@@ -167,7 +171,7 @@ const ChatScreen = () => {
         };
       },
     }).finally(() => {
-      setLoadingMore(false);
+      setLoadingMore(true);
     });
   }, [data, fetchMore, loading]);
 
