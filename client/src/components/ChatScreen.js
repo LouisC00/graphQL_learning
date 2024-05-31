@@ -4,18 +4,9 @@ import React, {
   useRef,
   useCallback,
   useLayoutEffect,
-} from "react"; // Add useCallback
+} from "react";
 import { useParams } from "react-router-dom";
-import {
-  Box,
-  AppBar,
-  Toolbar,
-  Avatar,
-  Typography,
-  TextField,
-  Stack,
-  Button,
-} from "@mui/material";
+import { Box, TextField, Stack, Button } from "@mui/material";
 import MessageCard from "./MessageCard";
 import CustomAppBar from "./CustomAppBar";
 import { GET_MSG } from "../graphql/queries";
@@ -39,7 +30,7 @@ const ChatScreen = () => {
   const [hasMore, setHasMore] = useState(true);
   const chatBoxRef = useRef(null);
   const atBottomRef = useRef(true);
-  const client = useApolloClient(); // This hooks into the Apollo Client instance
+  const client = useApolloClient();
 
   const { data, loading, fetchMore } = useQuery(GET_MSG, {
     variables: { receiverId: parseInt(id), limit: 15 },
@@ -56,7 +47,7 @@ const ChatScreen = () => {
 
   const [sendMessage] = useMutation(SEND_MSG, {
     variables: {
-      receiverId: parseInt(id), // Ensure ID is a number
+      receiverId: parseInt(id),
       text,
     },
     onCompleted(data) {
@@ -85,7 +76,7 @@ const ChatScreen = () => {
                 (ref) => readField("id", ref.node) === newMessage.id
               )
             ) {
-              return existingMessageRefs; // Prevent duplicates
+              return existingMessageRefs;
             }
 
             return {
@@ -105,7 +96,6 @@ const ChatScreen = () => {
     variables: { receiverId: parseInt(id) },
     onData: ({ data }) => {
       const newMessage = data.data.messageAdded;
-
       setMessages((prevMessages) => [...prevMessages, newMessage]);
 
       client.cache.modify({
@@ -129,7 +119,7 @@ const ChatScreen = () => {
                 (ref) => readField("id", ref.node) === newMessage.id
               )
             ) {
-              return existingMessageRefs; // Prevent duplicates
+              return existingMessageRefs;
             }
 
             return {
@@ -146,13 +136,13 @@ const ChatScreen = () => {
   });
 
   const [loadingMore, setLoadingMore] = useState(false);
-  const previousScrollHeight = useRef(0); // To track the scroll height before loading new messages
+  const previousScrollHeight = useRef(0);
 
   const loadMoreMessages = useCallback(() => {
     if (!data || !data.messagesByUser.pageInfo.hasNextPage || loading) return;
 
-    setLoadingMore(false);
-    previousScrollHeight.current = chatBoxRef.current.scrollHeight; // Capture current scroll height before loading
+    setLoadingMore(true);
+    previousScrollHeight.current = chatBoxRef.current.scrollHeight;
 
     fetchMore({
       variables: {
@@ -177,7 +167,7 @@ const ChatScreen = () => {
         };
       },
     }).finally(() => {
-      setLoadingMore(true);
+      setLoadingMore(false);
     });
   }, [data, fetchMore, loading]);
 
@@ -190,40 +180,37 @@ const ChatScreen = () => {
   }, [loadingMore]);
 
   useEffect(() => {
-    // Assign the current value of chatBoxRef to a variable within the effect
     const currentChatBox = chatBoxRef.current;
 
     const handleScroll = lodash.debounce(() => {
-      if (!currentChatBox) return; // Use the local variable instead of chatBoxRef.current directly
+      if (!currentChatBox) return;
       const { scrollTop, scrollHeight, clientHeight } = currentChatBox;
 
       const isAtBottom = scrollHeight - clientHeight <= scrollTop + 1;
       atBottomRef.current = isAtBottom;
 
       const isAtTop = scrollTop === 0;
-      if (isAtTop && hasMore && !loadingMore & !loading) {
+      if (isAtTop && hasMore && !loadingMore && !loading) {
         loadMoreMessages();
       }
-    }, 20); // Changed debounce time to  10ms which is more common for handling scroll events
+    }, 20);
 
-    // Add the event listener using the local variable
     if (currentChatBox) {
       currentChatBox.addEventListener("scroll", handleScroll);
     }
 
     return () => {
-      // Remove the event listener using the same local variable
       if (currentChatBox) {
         currentChatBox.removeEventListener("scroll", handleScroll);
       }
     };
-  }, [hasMore, loadMoreMessages, loadingMore, loading]); // Keep dependencies array intact
+  }, [hasMore, loadMoreMessages, loadingMore, loading]);
 
   useLayoutEffect(() => {
     if (atBottomRef.current) {
       scrollToBottom();
     }
-  }, [messages]); // Scroll to bottom every time messages update
+  }, [messages]);
 
   const scrollToBottom = () => {
     if (chatBoxRef.current) {
@@ -234,18 +221,6 @@ const ChatScreen = () => {
   return (
     <Box flexGrow={1}>
       <CustomAppBar id={id} name={name} status={status} />
-      {/* <AppBar position="static" sx={{ backgroundColor: "white", boxShadow: 0 }}>
-        <Toolbar>
-          <Avatar
-            src={`https://api.dicebear.com/8.x/initials/svg?seed=${name}`}
-            sx={{ width: "32px", height: "32px", mr: 2 }}
-            alt="avatar"
-          />
-          <Typography varaint="h6" color="black">
-            {name}
-          </Typography>
-        </Toolbar>
-      </AppBar> */}
       <Box
         ref={chatBoxRef}
         backgroundColor="#f5f5f5"
@@ -261,9 +236,9 @@ const ChatScreen = () => {
             direction={msg.receiverId === +id ? "end" : "start"}
           />
         ))}
-        {hasMore && !loading && (
+        {/* {hasMore && !loading && (
           <Button onClick={loadMoreMessages}>Load More</Button>
-        )}
+        )} */}
       </Box>
       <Stack direction="row" sx={{ padding: "3px" }}>
         <TextField
